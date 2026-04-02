@@ -1,0 +1,42 @@
+{
+  "name": "@d7om/md-watch",
+  "version": "1.0.6",
+  "description": "Fast local Markdown preview server with live reload",
+  "type": "module",
+  "bin": {
+    "md": "dist/md.js",
+    "md-watch": "dist/md.js"
+  },
+  "scripts": {
+    "build": "tsx build.ts",
+    "prepublishOnly": "npm run build",
+    "dev": "node --watch --experimental-strip-types src/index.ts",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "prepare": "npx husky"
+  },
+  "lint-staged": {
+    "*.ts": "biome check --write",
+    "*.json": "biome format --write"
+  },
+  "author": "d7om <hello@d7om.dev>",
+  "license": "MIT",
+  "homepage": "https://github.com/d7omdev/md-watch",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/d7omdev/md-watch.git"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
+    "@types/node": "^22",
+    "esbuild": "^0.25",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "tsx": "^4"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "marked": "^17.0.5"
+  }
+}

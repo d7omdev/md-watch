@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{TITLE}}</title>
+    {{HLJS_TAGS}}
+    <style>
+      /* Default (gruvbox dark) */
+      :root{--bg:#282828;--fg:#ebdbb2;--muted:#a89984;--border:#3c3836;--accent:#fe8019;--code-bg:#1d2021;--link:#83a598;--toolbar-bg:rgba(40,40,40,0.88);--toc-bg:#1d2021;--toc-hover:#3c3836;--slider-track:#504945;--slider-thumb:#fabd2f}
+
+      {{THEME_CSS}}
+
+      *{box-sizing:border-box;margin:0;padding:0}
+      html{font-size:17px;scroll-behavior:smooth}
+      body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+        background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;
+        padding-top:42px;transition:padding-left 0.2s ease,background 0.3s ease,color 0.3s ease}
+      body:not(.toc-hidden){padding-left:260px}
+      body.toc-hidden{padding-left:0}
+
+      /* Toolbar */
+      #toolbar{position:fixed;top:0;left:0;right:0;z-index:100;height:42px;
+        display:flex;align-items:center;gap:10px;padding:0 16px;
+        background:var(--toolbar-bg);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+        font-size:0.8rem;color:var(--muted)}
+      #toc-toggle{display:flex;align-items:center;justify-content:center;width:28px;height:28px;
+        background:var(--code-bg);color:var(--fg);border:1px solid var(--border);border-radius:6px;
+        cursor:pointer;transition:border-color 0.15s,background 0.15s,color 0.15s;flex-shrink:0;padding:0}
+      #toc-toggle:hover{border-color:var(--accent);background:var(--toc-hover);color:var(--accent)}
+      #toc-toggle svg{display:block}
+
+      /* Custom theme dropdown */
+      #theme-dropdown{position:relative}
+      #theme-btn{display:flex;align-items:center;gap:7px;background:var(--code-bg);color:var(--fg);
+        border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;
+        font:inherit;font-size:0.8rem;transition:border-color 0.15s,background 0.15s;white-space:nowrap}
+      #theme-btn:hover,#theme-dropdown.open #theme-btn{border-color:var(--accent)}
+      #theme-dropdown.open #theme-btn{background:var(--toc-hover)}
+      .dd-chevron{display:inline-block;width:5px;height:5px;flex-shrink:0;
+        border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);
+        transform:rotate(45deg) translateY(-1px);transition:transform 0.15s,border-color 0.15s}
+      #theme-dropdown.open .dd-chevron{transform:rotate(-135deg) translateY(-1px);border-color:var(--accent)}
+      #theme-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;
+        background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+        padding:4px;min-width:200px;max-height:340px;overflow-y:auto;
+        box-shadow:0 8px 28px rgba(0,0,0,0.4);z-index:200}
+      #theme-dropdown.open #theme-panel{display:block}
+      .dd-group{margin-bottom:2px}
+      .dd-group-label{padding:6px 9px 3px;font-size:0.7rem;font-weight:700;
+        color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;user-select:none}
+      .dd-item{padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.8rem;
+        color:var(--fg);transition:background 0.1s;user-select:none}
+      .dd-item:hover{background:var(--toc-hover)}
+      .dd-item.active{color:var(--accent);font-weight:600}
+      .dd-sep{height:1px;background:var(--border);margin:3px 4px}
+
+      /* Width control */
+      .spacer{flex:1}
+      #toolbar label{display:flex;align-items:center;gap:6px}
+      #width-slider{-webkit-appearance:none;width:160px;height:4px;border-radius:2px;
+        background:var(--slider-track);outline:none;cursor:pointer}
+      #width-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;
+        border-radius:50%;background:var(--slider-thumb);cursor:pointer}
+      #width-slider::-moz-range-thumb{width:14px;height:14px;border:none;
+        border-radius:50%;background:var(--slider-thumb);cursor:pointer}
+      #width-val{min-width:3.5em;text-align:right;font-variant-numeric:tabular-nums}
+
+      /* TOC sidebar */
+      #toc-sidebar{position:fixed;top:42px;left:0;bottom:0;width:260px;
+        overflow-y:auto;padding:1rem 0.8rem;background:var(--toc-bg);border-right:1px solid var(--border);
+        font-size:0.82rem;transition:transform 0.2s ease,background 0.3s ease;z-index:50}
+      #toc-sidebar.collapsed{transform:translateX(-260px)}
+      #toc-sidebar ul{list-style:none;padding:0;margin:0}
+      #toc-sidebar li{margin:0}
+      #toc-sidebar .toc-h3{padding-left:1em}
+      #toc-sidebar .toc-h4{padding-left:2em}
+      #toc-sidebar a{display:block;padding:5px 10px;border-radius:5px;color:var(--fg);
+        text-decoration:none;transition:background 0.15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      #toc-sidebar a:hover{background:var(--toc-hover)}
+      #toc-sidebar a.active{color:var(--accent);font-weight:600}
+
+      /* Content */
+      #content{max-width:2400px;margin:0 auto;padding:2.5rem 2rem}
+      #content h1,#content h2,#content h3,#content h4{font-weight:600;line-height:1.3;margin:1.8em 0 0.6em;letter-spacing:-0.02em;position:relative}
+      #content h1{font-size:2rem;border-bottom:2px solid var(--border);padding-bottom:0.4em}
+      #content h2{font-size:1.4rem}
+      #content h3{font-size:1.15rem}
+      #content h4{font-size:1rem}
+      #content a{color:var(--link);text-decoration:underline;text-underline-offset:2px}
+      #content a:hover{opacity:0.8}
+      #content p,#content ul,#content ol,#content blockquote,#content pre,#content table,#content dl{margin:1em 0}
+      #content ul,#content ol{padding-left:1.5em}
+      #content blockquote{border-left:3px solid var(--accent);padding:0.2em 1em;color:var(--muted);margin-left:0}
+      #content code{font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.88em;
+        background:var(--code-bg);padding:0.15em 0.35em;border-radius:4px}
+      #content pre{background:var(--code-bg);padding:1em 1.2em;border-radius:8px;overflow-x:auto;
+        border:1px solid var(--border);transition:background 0.3s ease}
+      #content pre code{background:none;padding:0;font-size:0.85em}
+      #content table{border-collapse:collapse;width:100%}
+      #content th,#content td{border:1px solid var(--border);padding:0.5em 0.8em;text-align:left}
+      #content th{background:var(--code-bg);font-weight:600}
+      #content hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+      #content img{max-width:100%;border-radius:6px}
+      .hljs{background:var(--code-bg)!important}
+
+      /* Heading anchor links */
+      .h-anchor{position:absolute;left:-1.1em;width:1em;opacity:0;color:var(--muted);
+        text-decoration:none;font-weight:400;font-size:0.85em;line-height:inherit;
+        transition:opacity 0.15s;user-select:none;display:inline-flex;align-items:center}
+      #content h1:hover .h-anchor,#content h2:hover .h-anchor,
+      #content h3:hover .h-anchor,#content h4:hover .h-anchor{opacity:0.6}
+      .h-anchor:hover{opacity:1!important;color:var(--accent)}
+
+      /* Code copy button */
+      .pre-wrap{position:relative}
+      .copy-btn{position:absolute;top:7px;right:7px;font:inherit;font-size:0.72rem;
+        background:var(--toc-hover);color:var(--muted);border:1px solid var(--border);
+        border-radius:4px;padding:2px 8px;cursor:pointer;opacity:0;
+        transition:opacity 0.15s,color 0.15s,border-color 0.15s,background 0.15s}
+      .pre-wrap:hover .copy-btn{opacity:1}
+      .copy-btn:hover{color:var(--fg);border-color:var(--muted);background:var(--code-bg)}
+      .copy-btn.copied{color:var(--accent);border-color:var(--accent);opacity:1}
+
+      @media(max-width:768px){
+        body:not(.toc-hidden){padding-left:0}
+        #toc-sidebar{width:280px;box-shadow:4px 0 24px rgba(0,0,0,0.3)}
+        #toc-sidebar.collapsed{transform:translateX(-280px)}
+        #toolbar{gap:8px;padding:0 10px;flex-wrap:wrap;height:auto;min-height:42px}
+        #width-slider{width:100px}
+        #content{padding:1.5rem 1rem}
+      }
+      @media(max-width:480px){
+        #toc-sidebar{width:100vw;box-shadow:none}
+        #toc-sidebar.collapsed{transform:translateX(-100vw)}
+        #content{padding:1.2rem 0.8rem}
+      }
+      @media print{
+        #toolbar,#toc-sidebar,.copy-btn,.h-anchor{display:none!important}
+        body{padding:0!important;background:#fff!important;color:#000!important}
+        #content{max-width:100%!important;padding:0!important}
+        #content a{color:inherit}
+        #content pre{border:1px solid #ccc;white-space:pre-wrap;word-break:break-all}
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <button id="toc-toggle" title="Toggle table of contents" aria-label="Toggle table of contents">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="1" y="1" width="14" height="14" rx="2"/>
+          <line x1="6" y1="1" x2="6" y2="15"/>
+          <line x1="9" y1="5" x2="13" y2="5"/>
+          <line x1="9" y1="8" x2="13" y2="8"/>
+          <line x1="9" y1="11" x2="11.5" y2="11"/>
+        </svg>
+      </button>
+      <span>Theme</span>
+      <div id="theme-dropdown">
+        <button id="theme-btn" type="button">
+          <span id="theme-label">Gruvbox Dark</span>
+          <span class="dd-chevron"></span>
+        </button>
+        <div id="theme-panel">{{THEME_ITEMS}}</div>
+      </div>
+      <span class="spacer"></span>
+      <label>Width
+        <input type="range" id="width-slider" min="400" max="2400" step="20" value="2400" />
+        <span id="width-val"></span>
+      </label>
+    </div>
+
+    <aside id="toc-sidebar" aria-label="Table of contents"><ul id="toc-list"></ul></aside>
+
+    <div id="content">{{BODY}}</div>
+
+    <script>
+      const THEME_HLJS = {{THEMES_JSON}};
+      const DEFAULT_THEME = '{{DEFAULT_THEME}}';
+
+      // --- Heading slugs ---
+      (function() {
+        const slugCount = Object.create(null);
+        function slugify(text) {
+          let s = text.toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+          if (!s) s = 'section';
+          const n = slugCount[s] = (slugCount[s] || 0) + 1;
+          return n > 1 ? s + '-' + (n - 1) : s;
+        }
+        document.querySelectorAll('#content h1,#content h2,#content h3,#content h4').forEach(h => {
+          if (!h.id) h.id = slugify(h.textContent || '');
+          const a = document.createElement('a');
+          a.className = 'h-anchor';
+          a.href = '#' + h.id;
+          a.textContent = '#';
+          a.setAttribute('aria-hidden', 'true');
+          a.addEventListener('click', e => {
+            e.preventDefault();
+            history.pushState(null, '', '#' + h.id);
+            h.scrollIntoView({ behavior: 'smooth' });
+          });
+          h.insertBefore(a, h.firstChild);
+        });
+      })();
+
+      // --- TOC ---
+      (function() {
+        const content = document.getElementById('content');
+        const tocList = document.getElementById('toc-list');
+        const headings = Array.from(content.querySelectorAll('h1,h2,h3,h4'));
+        if (!headings.length) return;
+
+        headings.forEach(h => {
+          const li = document.createElement('li');
+          const tag = h.tagName;
+          if (tag === 'H3') li.className = 'toc-h3';
+          else if (tag === 'H4') li.className = 'toc-h4';
+          const a = document.createElement('a');
+          a.href = '#' + h.id;
+          a.textContent = h.textContent.replace(/^#\s*/, '');
+          a.addEventListener('click', e => {
+            e.preventDefault();
+            history.pushState(null, '', '#' + h.id);
+            h.scrollIntoView({ behavior: 'smooth' });
+          });
+          li.appendChild(a);
+          tocList.appendChild(li);
+        });
+
+        const tocLinks = Array.from(tocList.querySelectorAll('a'));
+        let ticking = false;
+        function updateActive() {
+          const top = window.scrollY + 56;
+          let active = headings[0];
+          for (const h of headings) {
+            if (h.offsetTop <= top) active = h;
+            else break;
+          }
+          tocLinks.forEach(a => a.classList.remove('active'));
+          const link = tocList.querySelector('a[href="#' + active.id + '"]');
+          if (link) {
+            link.classList.add('active');
+            link.scrollIntoView({ block: 'nearest' });
+          }
+        }
+        window.addEventListener('scroll', () => {
+          if (!ticking) { requestAnimationFrame(() => { updateActive(); ticking = false; }); ticking = true; }
+        }, { passive: true });
+        updateActive();
+      })();
+
+      // --- Copy buttons ---
+      document.querySelectorAll('#content pre').forEach(pre => {
+        const wrap = document.createElement('div');
+        wrap.className = 'pre-wrap';
+        pre.parentNode.insertBefore(wrap, pre);
+        wrap.appendChild(pre);
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = 'Copy';
+        btn.addEventListener('click', () => {
+          const code = pre.querySelector('code');
+          const text = (code || pre).textContent || '';
+          navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+          }).catch(() => {});
+        });
+        wrap.appendChild(btn);
+      });
+
+      // --- Theme dropdown ---
+      const themeDropdown = document.getElementById('theme-dropdown');
+      const themeBtn = document.getElementById('theme-btn');
+      const themeLabel = document.getElementById('theme-label');
+      const themePanel = document.getElementById('theme-panel');
+
+      function applyTheme(id) {
+        document.documentElement.setAttribute('data-theme', id);
+        const hljsName = THEME_HLJS[id];
+        document.querySelectorAll('style[data-hljs]').forEach(el => {
+          el.media = el.getAttribute('data-hljs') === hljsName ? '' : 'not all';
+        });
+        const item = themePanel.querySelector('.dd-item[data-id="' + id + '"]');
+        if (item) themeLabel.textContent = item.textContent;
+        themePanel.querySelectorAll('.dd-item').forEach(el => {
+          el.classList.toggle('active', el.dataset.id === id);
+        });
+      }
+
+      themeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        themeDropdown.classList.toggle('open');
+      });
+      document.addEventListener('click', () => themeDropdown.classList.remove('open'));
+      themePanel.addEventListener('click', e => {
+        const item = e.target.closest('.dd-item');
+        if (!item) return;
+        applyTheme(item.dataset.id);
+        localStorage.setItem('md-theme', item.dataset.id);
+        themeDropdown.classList.remove('open');
+      });
+      (function() { applyTheme(localStorage.getItem('md-theme') || DEFAULT_THEME); })();
+
+      // --- Width ---
+      const slider = document.getElementById('width-slider');
+      const widthVal = document.getElementById('width-val');
+      const contentEl = document.getElementById('content');
+      function applyWidth(v) {
+        contentEl.style.maxWidth = v + 'px';
+        widthVal.textContent = v >= 2400 ? '∞' : v + 'px';
+      }
+      (function() { const w = localStorage.getItem('md-width') || '2400'; slider.value = w; applyWidth(+w); })();
+      slider.addEventListener('input', e => { applyWidth(+e.target.value); localStorage.setItem('md-width', e.target.value); });
+
+      // --- TOC toggle ---
+      const tocSidebar = document.getElementById('toc-sidebar');
+      const tocToggle = document.getElementById('toc-toggle');
+      (function() {
+        if (localStorage.getItem('md-toc-hidden') === '1') {
+          document.body.classList.add('toc-hidden');
+          tocSidebar.classList.add('collapsed');
+        }
+      })();
+      tocToggle.addEventListener('click', () => {
+        const hidden = document.body.classList.toggle('toc-hidden');
+        tocSidebar.classList.toggle('collapsed', hidden);
+        localStorage.setItem('md-toc-hidden', hidden ? '1' : '0');
+      });
+
+      // --- Auto-reload ---
+      let lastHash = null;
+      setInterval(async () => {
+        try {
+          const h = await fetch('/_hash?' + Date.now()).then(r => r.text());
+          if (lastHash !== null && h !== lastHash) location.reload();
+          lastHash = h;
+        } catch (_) {}
+      }, 500);
+    </script>
+  </body>
+</html>

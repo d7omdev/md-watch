@@ -1,0 +1,21 @@
+# Source files
+src/
+build.ts
+tsconfig.json
+biome.json
+bun.lock
+index.ts
+
+# Docs & config
+CLAUDE.md
+.git/
+.github/
+.husky/
+
+# Dev assets
+README-img/
+reports/
+
+# Editor files
+*.tsbuildinfo
+.cache/
