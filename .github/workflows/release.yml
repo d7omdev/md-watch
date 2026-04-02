@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Checksum
+        run: sha256sum dist/md.js > dist/md.sha256
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/md.js
+            dist/md.sha256
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
