@@ -16,8 +16,8 @@
       body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
         background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;
         padding-top:42px;transition:padding-left 0.2s ease,background 0.3s ease,color 0.3s ease}
-      body:not(.toc-hidden){padding-left:260px}
       body.toc-hidden{padding-left:0}
+      body:not(.toc-hidden){padding-left:260px}
 
       /* Toolbar */
       #toolbar{position:fixed;top:0;left:0;right:0;z-index:100;height:42px;
@@ -69,8 +69,9 @@
       /* TOC sidebar */
       #toc-sidebar{position:fixed;top:42px;left:0;bottom:0;width:260px;
         overflow-y:auto;padding:1rem 0.8rem;background:var(--toc-bg);border-right:1px solid var(--border);
-        font-size:0.82rem;transition:transform 0.2s ease,background 0.3s ease;z-index:50}
+        font-size:0.82rem;z-index:50;opacity:0;visibility:hidden;transition:opacity 0.2s,visibility 0.2s,transform 0.2s,background 0.3s}
       #toc-sidebar.collapsed{transform:translateX(-260px)}
+      #toc-sidebar.toc-visible{opacity:1;visibility:visible}
       #toc-sidebar ul{list-style:none;padding:0;margin:0}
       #toc-sidebar li{margin:0}
       #toc-sidebar .toc-h3{padding-left:1em}
@@ -178,8 +179,8 @@
       const THEME_HLJS = {{THEMES_JSON}};
       const DEFAULT_THEME = '{{DEFAULT_THEME}}';
 
-      // --- Heading slugs ---
-      (function() {
+      // --- Heading anchors ---
+      function setupHeadingAnchors() {
         const slugCount = Object.create(null);
         function slugify(text) {
           let s = text.toLowerCase()
@@ -205,12 +206,14 @@
           });
           h.insertBefore(a, h.firstChild);
         });
-      })();
+      }
 
       // --- TOC ---
-      (function() {
+      let _tocScrollListener = null;
+      function setupToc() {
         const content = document.getElementById('content');
         const tocList = document.getElementById('toc-list');
+        tocList.innerHTML = '';
         const headings = Array.from(content.querySelectorAll('h1,h2,h3,h4'));
         if (!headings.length) return;
 
@@ -247,32 +250,42 @@
             link.scrollIntoView({ block: 'nearest' });
           }
         }
-        window.addEventListener('scroll', () => {
+        if (_tocScrollListener) window.removeEventListener('scroll', _tocScrollListener);
+        _tocScrollListener = () => {
           if (!ticking) { requestAnimationFrame(() => { updateActive(); ticking = false; }); ticking = true; }
-        }, { passive: true });
+        };
+        window.addEventListener('scroll', _tocScrollListener, { passive: true });
         updateActive();
-      })();
+      }
 
       // --- Copy buttons ---
-      document.querySelectorAll('#content pre').forEach(pre => {
-        const wrap = document.createElement('div');
-        wrap.className = 'pre-wrap';
-        pre.parentNode.insertBefore(wrap, pre);
-        wrap.appendChild(pre);
-        const btn = document.createElement('button');
-        btn.className = 'copy-btn';
-        btn.textContent = 'Copy';
-        btn.addEventListener('click', () => {
-          const code = pre.querySelector('code');
-          const text = (code || pre).textContent || '';
-          navigator.clipboard.writeText(text).then(() => {
-            btn.textContent = 'Copied!';
-            btn.classList.add('copied');
-            setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
-          }).catch(() => {});
+      function setupCopyButtons() {
+        document.querySelectorAll('#content pre').forEach(pre => {
+          if (pre.parentNode.classList.contains('pre-wrap')) return;
+          const wrap = document.createElement('div');
+          wrap.className = 'pre-wrap';
+          pre.parentNode.insertBefore(wrap, pre);
+          wrap.appendChild(pre);
+          const btn = document.createElement('button');
+          btn.className = 'copy-btn';
+          btn.textContent = 'Copy';
+          btn.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            const text = (code || pre).textContent || '';
+            navigator.clipboard.writeText(text).then(() => {
+              btn.textContent = 'Copied!';
+              btn.classList.add('copied');
+              setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+            }).catch(() => {});
+          });
+          wrap.appendChild(btn);
         });
-        wrap.appendChild(btn);
-      });
+      }
+
+      // --- Initial page setup ---
+      setupHeadingAnchors();
+      setupToc();
+      setupCopyButtons();
 
       // --- Theme dropdown ---
       const themeDropdown = document.getElementById('theme-dropdown');
@@ -319,22 +332,25 @@
       slider.addEventListener('input', e => { applyWidth(+e.target.value); localStorage.setItem('md-width', e.target.value); });
 
       // --- TOC toggle ---
-      const tocSidebar = document.getElementById('toc-sidebar');
-      const tocToggle = document.getElementById('toc-toggle');
       (function() {
+        const tocSidebar = document.getElementById('toc-sidebar');
+        const tocToggle = document.getElementById('toc-toggle');
         if (localStorage.getItem('md-toc-hidden') === '1') {
           document.body.classList.add('toc-hidden');
           tocSidebar.classList.add('collapsed');
         }
+        tocSidebar.classList.add('toc-visible');
+        tocToggle.addEventListener('click', () => {
+          const hidden = document.body.classList.toggle('toc-hidden');
+          tocSidebar.classList.toggle('collapsed', hidden);
+          localStorage.setItem('md-toc-hidden', hidden ? '1' : '0');
+        });
       })();
-      tocToggle.addEventListener('click', () => {
-        const hidden = document.body.classList.toggle('toc-hidden');
-        tocSidebar.classList.toggle('collapsed', hidden);
-        localStorage.setItem('md-toc-hidden', hidden ? '1' : '0');
-      });
+
+      // --- SPA navigation for .md links ---
+      let lastHash = null;
 
       // --- Auto-reload ---
-      let lastHash = null;
       setInterval(async () => {
         try {
           const h = await fetch('/_hash?' + Date.now()).then(r => r.text());
@@ -342,6 +358,32 @@
           lastHash = h;
         } catch (_) {}
       }, 500);
+
+      document.addEventListener('click', async e => {
+        const a = e.target.closest('a');
+        if (!a) return;
+        const href = a.getAttribute('href');
+        if (!href || href.startsWith('http') || href.startsWith('//') || href.startsWith('#')) return;
+        if (!href.endsWith('.md')) return;
+        e.preventDefault();
+        const res = await fetch(href).catch(() => null);
+        if (!res || !res.ok) { location.href = href; return; }
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        document.title = doc.title;
+        document.getElementById('content').innerHTML = doc.getElementById('content').innerHTML;
+        const oldThemePanel = document.getElementById('theme-panel');
+        const newThemePanel = doc.getElementById('theme-panel');
+        if (oldThemePanel && newThemePanel) oldThemePanel.innerHTML = newThemePanel.innerHTML;
+        history.pushState(null, '', href);
+        lastHash = null;
+        setupHeadingAnchors();
+        setupToc();
+        setupCopyButtons();
+        applyTheme(localStorage.getItem('md-theme') || DEFAULT_THEME);
+        window.scrollTo(0, 0);
+      });
     </script>
   </body>
 </html>

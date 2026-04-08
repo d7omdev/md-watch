@@ -43,8 +43,8 @@ const marked = new Marked({
       const resolved = resolveHref(href);
       const titleAttr = title ? ` title="${escapeAttr(title)}"` : "";
       const inner = this.parser.parseInline(tokens);
-      const external = !resolved.startsWith("#");
-      const extAttrs = external ? ` target="_blank" rel="noopener noreferrer"` : "";
+      const isExternal = /^https?:\/\//i.test(resolved);
+      const extAttrs = isExternal ? ` target="_blank" rel="noopener noreferrer"` : "";
       return `<a href="${escapeAttr(resolved)}"${extAttrs}${titleAttr}>${inner}</a>`;
     },
     image({ href, title, text }) {

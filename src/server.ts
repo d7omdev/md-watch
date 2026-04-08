@@ -9,6 +9,9 @@ const HOME = `${homedir()}/`;
 export interface ServerState {
   html: string;
   hash: string;
+  baseDir: string;
+  currentFile: string;
+  updateFile: (filePath: string) => { baseDir: string };
 }
 
 export interface BoundServer {
@@ -81,11 +84,7 @@ function serveFile(
   }
 }
 
-export function startServer(
-  state: ServerState,
-  port: number,
-  baseDir: string,
-): Promise<BoundServer> {
+export function startServer(state: ServerState, port: number): Promise<BoundServer> {
   return new Promise((resolve: (v: BoundServer) => void, reject) => {
     const server = createServer((req, res) => {
       const pathname = new URL(req.url ?? "/", `http://localhost`).pathname;
@@ -113,6 +112,13 @@ export function startServer(
           res.end("Forbidden");
           return;
         }
+        // Render .md files
+        if (absPath.endsWith(".md") && existsSync(absPath)) {
+          state.updateFile(absPath);
+          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(state.html);
+          return;
+        }
         const mime = MIME[extname(absPath).toLowerCase()];
         if (!mime || !existsSync(absPath)) {
           res.writeHead(404);
@@ -123,10 +129,29 @@ export function startServer(
         return;
       }
 
-      // Static files — try baseDir first, then cwd
-      const decoded = decodeURIComponent(pathname);
+      // .md file routing
+      if (pathname.endsWith(".md")) {
+        const decoded = decodeURIComponent(pathname.slice(1)); // strip leading /
+        const candidates = [
+          resolvePath(join(state.baseDir, decoded)),
+          resolvePath(join(process.cwd(), decoded)),
+        ];
+        const mdPath = candidates.find((p) => existsSync(p));
+        if (mdPath) {
+          state.updateFile(mdPath);
+          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(state.html);
+          return;
+        }
+        res.writeHead(404);
+        res.end("Not found");
+        return;
+      }
+
+      // Static files — try state.baseDir first, then cwd
+      const decoded = decodeURIComponent(pathname.slice(1)); // strip leading /
       const candidates = [
-        resolvePath(join(baseDir, decoded)),
+        resolvePath(join(state.baseDir, decoded)),
         resolvePath(join(process.cwd(), decoded)),
       ];
       const safePath = candidates.find((p) => existsSync(p));

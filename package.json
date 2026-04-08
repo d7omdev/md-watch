@@ -1,6 +1,6 @@
 {
   "name": "@d7om/md-watch",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Fast local Markdown preview server with live reload",
   "type": "module",
   "bin": {
