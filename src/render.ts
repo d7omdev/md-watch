@@ -34,7 +34,7 @@ const marked = new Marked({
     code({ text, lang }) {
       const language = lang && hljs.getLanguage(lang) ? lang : undefined;
       if (!language) {
-        return `<pre><code>${escapeHtml(text)}</code></pre>`;
+        return `<pre><code data-lang="${escapeAttr(lang ?? "")}">${escapeHtml(text)}</code></pre>`;
       }
       const highlighted = hljs.highlight(text, { language }).value;
       return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
@@ -69,7 +69,10 @@ function escapeAttr(s: string): string {
 
 export function render(mdContent: string, title: string, baseDir?: string): string {
   _baseDir = baseDir;
-  const body = marked.parse(mdContent) as string;
-  _baseDir = undefined;
-  return template(body, title);
+  try {
+    const body = marked.parse(mdContent) as string;
+    return template(body, title);
+  } finally {
+    _baseDir = undefined;
+  }
 }

@@ -11,10 +11,11 @@ const VERSION = "1.0.7";
 interface CacheEntry {
   html: string;
   hash: string;
-  mtime: number;
 }
 
+const MAX_CACHE_SIZE = 50;
 const renderCache = new Map<string, CacheEntry>();
+const cacheOrder: string[] = [];
 
 const rawArgs = process.argv.slice(2);
 
@@ -51,7 +52,12 @@ let shouldOpen = false;
 for (let i = 0; i < rawArgs.length; i++) {
   const arg = rawArgs[i]!;
   if (arg === "--port" || arg === "-p") {
-    port = parseInt(rawArgs[++i] ?? "", 10);
+    const rawPort = rawArgs[++i];
+    port = parseInt(rawPort ?? "", 10);
+    if (rawPort === undefined || isNaN(port)) {
+      console.error("Error: --port requires a number. Example: md README.md --port 3000");
+      process.exit(1);
+    }
   } else if (arg === "--open" || arg === "-o") {
     shouldOpen = true;
   } else if (!arg.startsWith("-")) {
@@ -83,18 +89,29 @@ if (Number.isNaN(port) || port < 1 || port > 65535) {
 
 const baseDir = dirname(filePath);
 
+function evictCache() {
+  while (renderCache.size >= MAX_CACHE_SIZE && cacheOrder.length > 0) {
+    const oldest = cacheOrder.shift();
+    if (oldest) renderCache.delete(oldest);
+  }
+}
+
 function buildPage(mdPath: string): { html: string; hash: string } {
   const cached = renderCache.get(mdPath);
   if (cached) return cached;
 
   const md = readFileSync(mdPath, "utf-8");
-  const stat = statSync(mdPath);
   const mdTitle = basename(mdPath, ".md");
   const mdBaseDir = dirname(mdPath);
   const html = render(md, mdTitle, mdBaseDir);
   const hash = createHash("sha1").update(md).digest("base64url").slice(0, 8);
-  const entry = { html, hash, mtime: stat.mtimeMs };
+
+  evictCache();
+
+  const entry: CacheEntry = { html, hash };
   renderCache.set(mdPath, entry);
+  cacheOrder.push(mdPath);
+
   return { html, hash };
 }
 
@@ -130,12 +147,18 @@ if (shouldOpen) {
 process.on("SIGINT", () => process.exit(0));
 process.on("SIGTERM", () => process.exit(0));
 
+// Watch the parent directory so reload still fires if the file is replaced
 let debounce: ReturnType<typeof setTimeout> | null = null;
-watch(state.currentFile, () => {
+const watchDir = dirname(state.currentFile);
+const watchFile = basename(state.currentFile);
+watch(watchDir, (_event, filename) => {
+  if (filename !== watchFile) return;
   if (debounce) clearTimeout(debounce);
   debounce = setTimeout(() => {
     try {
       renderCache.delete(state.currentFile);
+      const idx = cacheOrder.indexOf(state.currentFile);
+      if (idx !== -1) cacheOrder.splice(idx, 1);
       const updated = buildPage(state.currentFile);
       state.html = updated.html;
       state.hash = updated.hash;

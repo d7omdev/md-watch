@@ -2,7 +2,7 @@ import { createReadStream, existsSync, statSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createServer } from "node:http";
 import { homedir } from "node:os";
-import { extname, join, resolve as resolvePath } from "node:path";
+import { extname, join, normalize, resolve as resolvePath } from "node:path";
 
 const HOME = `${homedir()}/`;
 
@@ -79,6 +79,7 @@ function serveFile(
       "Accept-Ranges": "bytes",
       "Content-Length": String(size),
       "Cache-Control": "public, max-age=5",
+      "X-Content-Type-Options": "nosniff",
     });
     createReadStream(filePath).on("error", onStreamError).pipe(res);
   }
@@ -106,7 +107,8 @@ export function startServer(state: ServerState, port: number): Promise<BoundServ
 
       // Absolute-path route for files outside baseDir (e.g. ../../Videos/...)
       if (pathname.startsWith("/_abs/")) {
-        const absPath = decodeURIComponent(pathname.slice(5)); // strip '/_abs', leaving /home/...
+        const rawPath = decodeURIComponent(pathname.slice(5)); // strip '/_abs', leaving /home/...
+        const absPath = normalize(rawPath);
         if (!absPath.startsWith(HOME)) {
           res.writeHead(403);
           res.end("Forbidden");
