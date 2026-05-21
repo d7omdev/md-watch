@@ -32,6 +32,10 @@ function resolveHref(href: string): string {
 const marked = new Marked({
   renderer: {
     code({ text, lang }) {
+      if (lang === "mermaid") {
+        const b64 = Buffer.from(text, "utf8").toString("base64");
+        return `<pre class="mermaid" data-source="${b64}">${escapeHtml(text)}</pre>`;
+      }
       const language = lang && hljs.getLanguage(lang) ? lang : undefined;
       if (!language) {
         return `<pre><code data-lang="${escapeAttr(lang ?? "")}">${escapeHtml(text)}</code></pre>`;

@@ -104,6 +104,8 @@
       #content hr{border:none;border-top:1px solid var(--border);margin:2em 0}
       #content img{max-width:100%;border-radius:6px}
       .hljs{background:var(--code-bg)!important}
+      #content pre.mermaid{background:transparent;border:none;padding:0.5em 0;display:flex;justify-content:center;text-align:center;color:var(--muted)}
+      #content pre.mermaid[data-processed="true"] svg{max-width:100%;height:auto}
 
       /* Heading anchor links */
       .h-anchor{position:absolute;left:-1.1em;width:1em;opacity:0;color:var(--muted);
@@ -176,9 +178,36 @@
 
     <div id="content">{{BODY}}</div>
 
+    <script type="module">
+      import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.mjs';
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+      window.__mermaid = mermaid;
+    </script>
     <script>
       const THEME_HLJS = {{THEMES_JSON}};
+      const THEME_DARK = {{THEME_DARK_JSON}};
       const DEFAULT_THEME = '{{DEFAULT_THEME}}';
+
+      async function renderMermaid() {
+        const m = window.__mermaid;
+        if (!m) { setTimeout(renderMermaid, 50); return; }
+        const isDark = !!THEME_DARK[document.documentElement.getAttribute('data-theme')];
+        m.initialize({ startOnLoad: false, securityLevel: 'loose', theme: isDark ? 'dark' : 'default' });
+        const nodes = document.querySelectorAll('#content pre.mermaid');
+        nodes.forEach(el => {
+          const src = el.getAttribute('data-source');
+          if (src) {
+            try {
+              const bytes = Uint8Array.from(atob(src), c => c.charCodeAt(0));
+              el.textContent = new TextDecoder('utf-8').decode(bytes);
+            } catch (_) {}
+          }
+          el.removeAttribute('data-processed');
+        });
+        if (nodes.length) {
+          try { await m.run({ nodes: Array.from(nodes) }); } catch (_) {}
+        }
+      }
 
       // --- Heading anchors ---
       function setupHeadingAnchors() {
@@ -262,6 +291,7 @@
       // --- Copy buttons ---
       function setupCopyButtons() {
         document.querySelectorAll('#content pre').forEach(pre => {
+          if (pre.classList.contains('mermaid')) return;
           if (pre.parentNode.classList.contains('pre-wrap')) return;
           const wrap = document.createElement('div');
           wrap.className = 'pre-wrap';
@@ -292,6 +322,7 @@
       setupHeadingAnchors();
       setupToc();
       setupCopyButtons();
+      renderMermaid();
 
       // --- Theme dropdown ---
       const themeDropdown = document.getElementById('theme-dropdown');
@@ -323,6 +354,7 @@
         applyTheme(item.dataset.id);
         localStorage.setItem('md-theme', item.dataset.id);
         themeDropdown.classList.remove('open');
+        renderMermaid();
       });
       (function() { applyTheme(localStorage.getItem('md-theme') || DEFAULT_THEME); })();
 
@@ -388,6 +420,7 @@
         setupToc();
         setupCopyButtons();
         applyTheme(localStorage.getItem('md-theme') || DEFAULT_THEME);
+        renderMermaid();
         window.scrollTo(0, 0);
       });
     </script>

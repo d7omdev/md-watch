@@ -99,6 +99,10 @@ function buildThemesJson(): string {
   return JSON.stringify(Object.fromEntries(themes.map((t) => [t.id, t.hljs])));
 }
 
+function buildThemeDarkJson(): string {
+  return JSON.stringify(Object.fromEntries(themes.map((t) => [t.id, t.isDark])));
+}
+
 const DEFAULT_THEME = "gruvbox-dark";
 
 // Pre-build all static parts once at module load
@@ -106,6 +110,7 @@ const _themeCss = buildThemeCss();
 const _hljsTags = buildHljsStyleTags();
 const _themeItems = buildThemeItems();
 const _themesJson = buildThemesJson();
+const _themeDarkJson = buildThemeDarkJson();
 
 export function template(body: string, title: string): string {
   return templateHtml
@@ -114,6 +119,7 @@ export function template(body: string, title: string): string {
     .replace("{{THEME_CSS}}", _themeCss)
     .replace("{{THEME_ITEMS}}", _themeItems)
     .replace("{{THEMES_JSON}}", _themesJson)
+    .replace("{{THEME_DARK_JSON}}", _themeDarkJson)
     .replace("{{DEFAULT_THEME}}", DEFAULT_THEME)
     .replace("{{BODY}}", body);
 }
