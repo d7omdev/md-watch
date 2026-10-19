@@ -17,11 +17,14 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
-      # Still needed: npm publish handles registry auth and provenance
+      # npm does the publish itself: trusted publishing (OIDC) needs npm >= 11.5.1, newer than Node 22 ships
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -43,7 +46,6 @@ jobs:
             dist/md.js
             dist/md.sha256
 
+      # Authenticates via the trusted publisher configured on npmjs.com, no token secret
       - name: Publish to npm
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
