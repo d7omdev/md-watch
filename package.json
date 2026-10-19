@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsx build.ts",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "bun run build",
     "dev": "node --watch --experimental-strip-types src/index.ts",
     "lint": "biome lint .",
     "format": "biome format --write .",
