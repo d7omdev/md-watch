@@ -19,3 +19,6 @@ reports/
 # Editor files
 *.tsbuildinfo
 .cache/
+
+# Examples
+examples/

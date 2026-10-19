@@ -14,7 +14,8 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check .",
-    "prepare": "npx husky"
+    "prepare": "npx husky",
+    "test": "bun test"
   },
   "lint-staged": {
     "*.ts": "biome check --write",
@@ -37,6 +38,11 @@
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
-    "marked": "^17.0.5"
+    "katex": "0.18",
+    "marked": "^17.0.5",
+    "marked-alert": "^2.1.2",
+    "marked-footnote": "^1.4.0",
+    "marked-katex-extension": "^5.1.13",
+    "simple-icons": "^16.35.0"
   }
 }

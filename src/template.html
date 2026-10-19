@@ -4,6 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{TITLE}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" />
     {{HLJS_TAGS}}
     <style>
       /* Default (gruvbox dark) */
@@ -13,11 +16,15 @@
 
       *{box-sizing:border-box;margin:0;padding:0}
       html{font-size:17px;scroll-behavior:smooth}
-      body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-        background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;
-        padding-top:42px;transition:padding-left 0.2s ease,background 0.3s ease,color 0.3s ease}
+      @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+      body{font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+        background:var(--bg);color:var(--fg);line-height:1.68;-webkit-font-smoothing:antialiased;
+        font-feature-settings:'kern','liga';text-rendering:optimizeLegibility;
+        padding-top:42px;transition:padding-left 0.2s ease,padding-right 0.2s ease,background 0.3s ease,color 0.3s ease}
       body.toc-hidden{padding-left:0}
       body:not(.toc-hidden){padding-left:260px}
+      body.files-hidden{padding-right:0}
+      body:not(.files-hidden){padding-right:220px}
 
       /* Toolbar */
       #toolbar{position:fixed;top:0;left:0;right:0;z-index:100;height:42px;
@@ -47,8 +54,8 @@
         box-shadow:0 8px 28px rgba(0,0,0,0.4);z-index:200}
       #theme-dropdown.open #theme-panel{display:block}
       .dd-group{margin-bottom:2px}
-      .dd-group-label{padding:6px 9px 3px;font-size:0.7rem;font-weight:700;
-        color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;user-select:none}
+      .dd-group-label{padding:7px 9px 3px;font-size:0.74rem;font-weight:600;
+        color:var(--muted);user-select:none}
       .dd-item{padding:5px 10px;border-radius:5px;cursor:pointer;font-size:0.8rem;
         color:var(--fg);transition:background 0.1s;user-select:none}
       .dd-item:hover{background:var(--toc-hover)}
@@ -81,31 +88,94 @@
       #toc-sidebar a:hover{background:var(--toc-hover)}
       #toc-sidebar a.active{color:var(--accent);font-weight:600}
 
+      /* Files sidebar (right) */
+      #files-toggle{display:flex;align-items:center;justify-content:center;width:28px;height:28px;
+        background:var(--code-bg);color:var(--fg);border:1px solid var(--border);border-radius:6px;
+        cursor:pointer;transition:border-color 0.15s,background 0.15s,color 0.15s;flex-shrink:0;padding:0}
+      #files-toggle:hover{border-color:var(--accent);background:var(--toc-hover);color:var(--accent)}
+      #files-toggle svg{display:block}
+      #files-sidebar{position:fixed;top:42px;right:0;bottom:0;width:220px;
+        overflow-y:auto;background:var(--toc-bg);border-left:1px solid var(--border);
+        font-size:0.82rem;z-index:50;opacity:0;visibility:hidden;
+        transition:opacity 0.2s,visibility 0.2s,transform 0.2s,background 0.3s}
+      #files-sidebar.collapsed{transform:translateX(220px)}
+      #files-sidebar.files-visible{opacity:1;visibility:visible}
+      #files-header{display:flex;align-items:center;gap:6px;
+        padding:0.8rem 0.9rem 0.6rem;color:var(--muted);font-size:0.78rem;font-weight:600;
+        border-bottom:1px solid var(--border);
+        user-select:none;overflow:hidden}
+      #files-header svg{flex-shrink:0;opacity:0.7}
+      #files-dir-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      #files-list{list-style:none;padding:0.35rem 0;margin:0}
+      #files-list li{margin:0}
+      #files-list a{display:flex;align-items:center;gap:7px;padding:5px 10px;
+        border-radius:5px;color:var(--fg);text-decoration:none;
+        transition:background 0.15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        margin:1px 4px;font-size:0.8rem}
+      #files-list a:hover{background:var(--toc-hover)}
+      #files-list a.active{color:var(--accent);font-weight:600}
+      #files-list a .f-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background 0.15s}
+      #files-list a.active .f-dot{background:var(--accent)}
+      #files-list a .f-name{overflow:hidden;text-overflow:ellipsis}
+
       /* Content */
-      #content{--content-width:2400px;max-width:var(--content-width);margin:0 auto;padding:2.5rem 2rem}
-      #content h1,#content h2,#content h3,#content h4{font-weight:600;line-height:1.3;margin:1.8em 0 0.6em;letter-spacing:-0.02em;position:relative}
-      #content h1{font-size:2rem;border-bottom:2px solid var(--border);padding-bottom:0.4em}
-      #content h2{font-size:1.4rem}
-      #content h3{font-size:1.15rem}
-      #content h4{font-size:1rem}
-      #content a{color:var(--link);text-decoration:underline;text-underline-offset:2px}
-      #content a:hover{opacity:0.8}
-      #content p,#content ul,#content ol,#content blockquote,#content pre,#content table,#content dl{margin:1em 0}
+      #content{--content-width:800px;max-width:var(--content-width);margin:0 auto;padding:3rem 2rem 6rem}
+      #content>:first-child{margin-top:0}
+      #content h1,#content h2,#content h3,#content h4{font-weight:600;line-height:1.25;margin:2em 0 0.6em;letter-spacing:-0.015em;position:relative;scroll-margin-top:60px}
+      #content h1{font-size:2.15rem;font-weight:700;letter-spacing:-0.025em;margin-bottom:0.8em;padding-bottom:0.45em;border-bottom:2px solid var(--border)}
+      #content h2{font-size:1.5rem;padding-bottom:0.3em;border-bottom:1px solid var(--border)}
+      #content h3{font-size:1.2rem}
+      #content h4{font-size:1rem;color:var(--muted)}
+      #content a{color:var(--link);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+      #content a:hover{text-decoration-thickness:2px}
+      #content strong{font-weight:600}
+      #content p,#content ul,#content ol,#content blockquote,#content pre,#content table,#content dl,#content details{margin:1em 0}
       #content ul,#content ol{padding-left:1.5em}
-      #content blockquote{border-left:3px solid var(--accent);padding:0.2em 1em;color:var(--muted);margin-left:0}
-      #content code{font-family:'JetBrains Mono','Fira Code',monospace;font-size:0.88em;
-        background:var(--code-bg);padding:0.15em 0.35em;border-radius:4px}
-      #content pre{background:var(--code-bg);padding:1em 1.2em;border-radius:8px;overflow-x:auto;
-        border:1px solid var(--border);transition:background 0.3s ease}
-      #content pre code{background:none;padding:0;font-size:0.85em}
-      #content table{border-collapse:collapse;width:100%}
-      #content th,#content td{border:1px solid var(--border);padding:0.5em 0.8em;text-align:left}
-      #content th{background:var(--code-bg);font-weight:600}
-      #content hr{border:none;border-top:1px solid var(--border);margin:2em 0}
-      #content img{max-width:100%;border-radius:6px}
+      #content li+li{margin-top:0.25em}
+      #content li>ul,#content li>ol{margin:0.25em 0}
+      #content li::marker{color:var(--muted)}
+      #content li:has(>input[type=checkbox]){list-style:none;margin-left:-1.3em}
+      #content input[type=checkbox]{accent-color:var(--accent);margin-right:0.45em;vertical-align:-0.1em}
+      #content blockquote{border-left:3px solid var(--border);padding:0.1em 1.1em;color:var(--muted);margin-left:0}
+      #content code{font-family:'IBM Plex Mono','JetBrains Mono','Fira Code',monospace;font-size:0.86em;
+        background:var(--code-bg);padding:0.12em 0.38em;border-radius:4px;border:1px solid var(--border)}
+      #content pre{background:var(--code-bg);padding:1em 1.2em;border-radius:10px;overflow-x:auto;
+        border:1px solid var(--border);transition:background 0.3s ease;line-height:1.55}
+      #content pre code{background:none;padding:0;border:none;font-size:0.84em}
+      /* Tables sit in a frame that hugs their content, like code blocks */
+      #content .table-wrap{overflow-x:auto;margin:1.4em 0;width:fit-content;max-width:100%;
+        border:1px solid var(--border);border-radius:10px}
+      #content table{border-collapse:collapse;font-size:0.93em;margin:0}
+      #content th,#content td{padding:0.6em 1.1em;border-top:1px solid var(--border)}
+      #content th:not([align]),#content td:not([align]){text-align:left}
+      #content th{font-weight:600;background:var(--code-bg);border-top:none;white-space:nowrap}
+      #content td+td,#content th+th{border-left:1px solid color-mix(in srgb,var(--border) 55%,transparent)}
+      #content tbody tr:hover td{background:color-mix(in srgb,var(--toc-hover) 60%,transparent)}
+      #content hr{border:none;border-top:1px solid var(--border);margin:2.5em 0}
+      #content img,#content video{max-width:100%;border-radius:8px;display:block}
+      #content kbd{font-family:'IBM Plex Mono',monospace;font-size:0.8em;padding:0.1em 0.45em;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;background:var(--code-bg)}
+      #content mark{background:var(--accent);color:var(--bg);padding:0 0.2em;border-radius:2px}
+      #content details{border:1px solid var(--border);border-radius:8px;padding:0.6em 1em}
+      #content summary{cursor:pointer;font-weight:500}
+      #content details[open] summary{margin-bottom:0.6em}
+      #content .katex-display{overflow-x:auto;overflow-y:hidden;padding:0.3em 0}
+      #content .markdown-alert{border-left:3px solid var(--alert);padding:0.5em 1.1em;margin:1.2em 0;--alert:var(--accent);
+        background:linear-gradient(90deg,color-mix(in srgb,var(--alert) 9%,transparent),transparent 70%);border-radius:0 8px 8px 0}
+      #content .markdown-alert>:last-child{margin-bottom:0}
+      #content .markdown-alert-title{display:flex;align-items:center;gap:0.5em;margin:0 0 0.3em;font-weight:600;color:var(--alert)}
+      #content .markdown-alert-title svg{fill:currentColor}
+      #content .markdown-alert-note{--alert:#4493f8}
+      #content .markdown-alert-tip{--alert:#3fb950}
+      #content .markdown-alert-important{--alert:#ab7df8}
+      #content .markdown-alert-warning{--alert:#d29922}
+      #content .markdown-alert-caution{--alert:#f85149}
+      #content .footnotes{margin-top:3em;padding-top:1em;border-top:1px solid var(--border);font-size:0.9em;color:var(--muted)}
+      #content sup a{text-decoration:none;padding:0 0.1em}
+      .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
       .hljs{background:var(--code-bg)!important}
       #content pre.mermaid{background:transparent;border:none;padding:0.5em 0;display:flex;justify-content:center;text-align:center;color:var(--muted)}
       #content pre.mermaid[data-processed="true"] svg{max-width:100%;height:auto}
+      :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 
       /* Heading anchor links */
       .h-anchor{position:absolute;left:-1.1em;width:1em;opacity:0;color:var(--muted);
@@ -115,21 +185,28 @@
       #content h3:hover .h-anchor,#content h4:hover .h-anchor{opacity:0.6}
       .h-anchor:hover{opacity:1!important;color:var(--accent)}
 
-      /* Code copy button */
-      .pre-wrap{position:relative}
-      .copy-btn{position:absolute;top:7px;right:7px;font:inherit;font-size:0.72rem;
-        background:var(--toc-hover);color:var(--muted);border:1px solid var(--border);
-        border-radius:4px;padding:2px 8px;cursor:pointer;opacity:0;
-        transition:opacity 0.15s,color 0.15s,border-color 0.15s,background 0.15s}
-      .pre-wrap:hover .copy-btn{opacity:1}
-      .copy-btn:hover{color:var(--fg);border-color:var(--muted);background:var(--code-bg)}
-      .copy-btn.copied{color:var(--accent);border-color:var(--accent);opacity:1}
-      .copy-btn.failed{color:#f85149;border-color:#f85149;opacity:1}
+      /* Code blocks: header strip with language and copy */
+      .pre-wrap{margin:1.2em 0;border:1px solid var(--border);border-radius:10px;background:var(--code-bg);overflow:hidden;transition:background 0.3s ease}
+      .pre-wrap>pre{margin:0!important;border:none!important;border-radius:0!important}
+      .code-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+        height:2.15rem;padding:0 0.45rem 0 1.1rem;border-bottom:1px solid var(--border);
+        font-size:0.74rem;color:var(--muted);user-select:none}
+      .code-lang{display:flex;align-items:center;gap:0.5em;font-weight:500;letter-spacing:0.01em}
+      .code-icon{width:13px;height:13px;fill:currentColor;flex-shrink:0;opacity:0.85}
+      .copy-btn{font:inherit;font-size:0.72rem;background:transparent;color:var(--muted);
+        border:1px solid transparent;border-radius:5px;padding:2px 9px;cursor:pointer;
+        transition:color 0.15s,border-color 0.15s,background 0.15s}
+      .copy-btn:hover{color:var(--fg);border-color:var(--border);background:var(--toc-hover)}
+      .copy-btn.copied{color:var(--accent);border-color:var(--accent)}
+      .copy-btn.failed{color:#f85149;border-color:#f85149}
 
       @media(max-width:768px){
         body:not(.toc-hidden){padding-left:0}
+        body:not(.files-hidden){padding-right:0}
         #toc-sidebar{width:280px;box-shadow:4px 0 24px rgba(0,0,0,0.3)}
         #toc-sidebar.collapsed{transform:translateX(-280px)}
+        #files-sidebar{width:280px;box-shadow:-4px 0 24px rgba(0,0,0,0.3)}
+        #files-sidebar.collapsed{transform:translateX(280px)}
         #toolbar{gap:8px;padding:0 10px;flex-wrap:wrap;height:auto;min-height:42px}
         #width-slider{width:100px}
         #content{padding:1.5rem 1rem}
@@ -137,10 +214,13 @@
       @media(max-width:480px){
         #toc-sidebar{width:100vw;box-shadow:none}
         #toc-sidebar.collapsed{transform:translateX(-100vw)}
+        #files-sidebar{width:100vw;box-shadow:none}
+        #files-sidebar.collapsed{transform:translateX(100vw)}
         #content{padding:1.2rem 0.8rem}
       }
       @media print{
-        #toolbar,#toc-sidebar,.copy-btn,.h-anchor{display:none!important}
+        #toolbar,#toc-sidebar,#files-sidebar,.copy-btn,.h-anchor{display:none!important}
+        .pre-wrap{border:1px solid #ccc}
         body{padding:0!important;background:#fff!important;color:#000!important}
         #content{max-width:100%!important;padding:0!important}
         #content a{color:inherit}
@@ -169,31 +249,51 @@
       </div>
       <span class="spacer"></span>
       <label>Width
-        <input type="range" id="width-slider" min="400" max="2400" step="20" value="2400" />
+        <input type="range" id="width-slider" min="400" max="2400" step="20" value="800" />
         <span id="width-val"></span>
       </label>
+      <button id="files-toggle" title="Toggle file browser" aria-label="Toggle file browser">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="1" y="1" width="14" height="14" rx="2"/>
+          <line x1="10" y1="1" x2="10" y2="15"/>
+          <line x1="3" y1="5" x2="7" y2="5"/>
+          <line x1="3" y1="8" x2="7" y2="8"/>
+          <line x1="3" y1="11" x2="5.5" y2="11"/>
+        </svg>
+      </button>
     </div>
 
     <aside id="toc-sidebar" aria-label="Table of contents"><ul id="toc-list"></ul></aside>
 
+    <aside id="files-sidebar" aria-label="Files in directory">
+      <div id="files-header">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M1 4a1 1 0 0 1 1-1h4l2 2h6a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4z"/>
+        </svg>
+        <span id="files-dir-name"></span>
+      </div>
+      <ul id="files-list"></ul>
+    </aside>
+
     <div id="content">{{BODY}}</div>
 
-    <script type="module">
-      import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.mjs';
-      mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
-      window.__mermaid = mermaid;
-    </script>
     <script>
       const THEME_HLJS = {{THEMES_JSON}};
       const THEME_DARK = {{THEME_DARK_JSON}};
       const DEFAULT_THEME = '{{DEFAULT_THEME}}';
+      const HEADINGS = ['h1', 'h2', 'h3', 'h4'].map(h => '#content ' + h + ':not(.sr-only)').join(',');
+      const MD_RE = /\.(md|markdown)$/i;
+      const KATEX_CSS = 'https://cdn.jsdelivr.net/npm/katex@{{KATEX_VERSION}}/dist/katex.min.css';
 
+      let mermaidLoad = null;
       async function renderMermaid() {
-        const m = window.__mermaid;
-        if (!m) { setTimeout(renderMermaid, 50); return; }
+        const nodes = document.querySelectorAll('#content pre.mermaid');
+        if (!nodes.length) return;
+        mermaidLoad ??= import('https://esm.sh/mermaid@11/dist/mermaid.esm.mjs').then(mod => mod.default);
+        const m = await mermaidLoad.catch(() => null);
+        if (!m) { mermaidLoad = null; return; }
         const isDark = !!THEME_DARK[document.documentElement.getAttribute('data-theme')];
         m.initialize({ startOnLoad: false, securityLevel: 'loose', theme: isDark ? 'dark' : 'default' });
-        const nodes = document.querySelectorAll('#content pre.mermaid');
         nodes.forEach(el => {
           const src = el.getAttribute('data-source');
           if (src) {
@@ -204,9 +304,7 @@
           }
           el.removeAttribute('data-processed');
         });
-        if (nodes.length) {
-          try { await m.run({ nodes: Array.from(nodes) }); } catch (_) {}
-        }
+        try { await m.run({ nodes: Array.from(nodes) }); } catch (_) {}
       }
 
       // --- Heading anchors ---
@@ -222,7 +320,7 @@
           const n = slugCount[s] = (slugCount[s] || 0) + 1;
           return n > 1 ? s + '-' + (n - 1) : s;
         }
-        document.querySelectorAll('#content h1,#content h2,#content h3,#content h4').forEach(h => {
+        document.querySelectorAll(HEADINGS).forEach(h => {
           if (!h.id) h.id = slugify(h.textContent || '');
           const a = document.createElement('a');
           a.className = 'h-anchor';
@@ -244,7 +342,7 @@
         const content = document.getElementById('content');
         const tocList = document.getElementById('toc-list');
         tocList.innerHTML = '';
-        const headings = Array.from(content.querySelectorAll('h1,h2,h3,h4'));
+        const headings = Array.from(content.querySelectorAll(HEADINGS));
         if (!headings.length) return;
 
         headings.forEach(h => {
@@ -290,39 +388,86 @@
 
       // --- Copy buttons ---
       function setupCopyButtons() {
-        document.querySelectorAll('#content pre').forEach(pre => {
-          if (pre.classList.contains('mermaid')) return;
-          if (pre.parentNode.classList.contains('pre-wrap')) return;
-          const wrap = document.createElement('div');
-          wrap.className = 'pre-wrap';
-          pre.parentNode.insertBefore(wrap, pre);
-          wrap.appendChild(pre);
+        document.querySelectorAll('#content .code-head').forEach(head => {
+          if (head.querySelector('.copy-btn')) return;
+          const pre = head.nextElementSibling;
           const btn = document.createElement('button');
           btn.className = 'copy-btn';
           btn.textContent = 'Copy';
           btn.addEventListener('click', () => {
-            const code = pre.querySelector('code');
-            const text = (code || pre).textContent || '';
-            navigator.clipboard.writeText(text).then(() => {
-              btn.textContent = 'Copied!';
+            navigator.clipboard.writeText(pre.textContent || '').then(() => {
+              btn.textContent = 'Copied';
               btn.classList.add('copied');
               btn.classList.remove('failed');
               setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
             }).catch(() => {
-              btn.textContent = 'Failed';
+              btn.textContent = 'Copy failed';
               btn.classList.add('failed');
               setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('failed'); }, 1500);
             });
           });
-          wrap.appendChild(btn);
+          head.appendChild(btn);
         });
       }
 
-      // --- Initial page setup ---
-      setupHeadingAnchors();
-      setupToc();
-      setupCopyButtons();
-      renderMermaid();
+      // --- Files sidebar ---
+      function loadFileList() {
+        fetch('/_files?path=' + encodeURIComponent(location.pathname), { cache: 'no-store' })
+          .then(r => r.json())
+          .then(data => {
+            document.getElementById('files-dir-name').textContent = data.dir || '.';
+            const list = document.getElementById('files-list');
+            list.innerHTML = '';
+            for (const file of data.files || []) {
+              const li = document.createElement('li');
+              const a = document.createElement('a');
+              a.href = file.href;
+              a.title = file.name;
+              const dot = document.createElement('span');
+              dot.className = 'f-dot';
+              const name = document.createElement('span');
+              name.className = 'f-name';
+              name.textContent = file.name.replace(MD_RE, '');
+              a.append(dot, name);
+              if (file.href === data.current) a.classList.add('active');
+              li.appendChild(a);
+              list.appendChild(li);
+            }
+          })
+          .catch(() => {});
+      }
+
+      // Math is rendered on the server; only its stylesheet and fonts load here, and only when needed
+      function loadKatexCss() {
+        if (!document.querySelector('#content .katex') || document.getElementById('katex-css')) return;
+        const link = document.createElement('link');
+        link.id = 'katex-css';
+        link.rel = 'stylesheet';
+        link.href = KATEX_CSS;
+        document.head.appendChild(link);
+      }
+
+      function wrapTables() {
+        document.querySelectorAll('#content table').forEach(table => {
+          if (table.parentNode.classList.contains('table-wrap')) return;
+          const wrap = document.createElement('div');
+          wrap.className = 'table-wrap';
+          table.parentNode.insertBefore(wrap, table);
+          wrap.appendChild(table);
+        });
+      }
+
+      function setupPage() {
+        loadKatexCss();
+        wrapTables();
+        setupHeadingAnchors();
+        setupToc();
+        setupCopyButtons();
+        loadFileList();
+        return renderMermaid();
+      }
+
+      setupPage();
 
       // --- Theme dropdown ---
       const themeDropdown = document.getElementById('theme-dropdown');
@@ -366,7 +511,7 @@
         contentEl.style.setProperty('--content-width', v + 'px');
         widthVal.textContent = v >= 2400 ? '∞' : v + 'px';
       }
-      (function() { const w = localStorage.getItem('md-width') || '2400'; slider.value = w; applyWidth(+w); })();
+      (function() { const w = localStorage.getItem('md-width') || '800'; slider.value = w; applyWidth(+w); })();
       slider.addEventListener('input', e => { applyWidth(+e.target.value); localStorage.setItem('md-width', e.target.value); });
 
       // --- TOC toggle ---
@@ -385,43 +530,108 @@
         });
       })();
 
+      // --- Files toggle ---
+      (function() {
+        const filesSidebar = document.getElementById('files-sidebar');
+        const filesToggle = document.getElementById('files-toggle');
+        if (localStorage.getItem('md-files-hidden') === '1') {
+          document.body.classList.add('files-hidden');
+          filesSidebar.classList.add('collapsed');
+        }
+        filesSidebar.classList.add('files-visible');
+        filesToggle.addEventListener('click', () => {
+          const hidden = document.body.classList.toggle('files-hidden');
+          filesSidebar.classList.toggle('collapsed', hidden);
+          localStorage.setItem('md-files-hidden', hidden ? '1' : '0');
+        });
+      })();
+
       // --- SPA navigation for .md links ---
       let lastHash = null;
+      let currentPath = location.pathname;
+
+      function hashTarget() {
+        if (!location.hash) return null;
+        let id = location.hash.slice(1);
+        try { id = decodeURIComponent(id); } catch (_) {}
+        return document.getElementById(id);
+      }
+
+      // Content is swapped by hand, so the browser can't restore scroll on Back/Forward itself
+      history.scrollRestoration = 'manual';
+
+      function videoReady(video) {
+        if (video.readyState >= 1) return Promise.resolve();
+        return new Promise(done => {
+          video.addEventListener('loadedmetadata', done, { once: true });
+          video.addEventListener('error', done, { once: true });
+          setTimeout(done, 2000);
+        });
+      }
+
+      async function loadPage(href, { push = false, keepScroll = false, scrollY } = {}) {
+        const res = await fetch(href, { cache: 'no-store' }).catch(() => null);
+        if (!res || !res.ok) {
+          // Live reload / back-forward: likely mid-save, so retry on the next poll instead of leaving the page
+          if (push) location.href = href;
+          return;
+        }
+        const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+        const y = window.scrollY;
+        document.title = doc.title;
+        document.getElementById('content').innerHTML = doc.getElementById('content').innerHTML;
+        if (push) {
+          history.replaceState({ y }, '');
+          history.pushState(null, '', href);
+        }
+        if (location.pathname !== currentPath) lastHash = null;
+        currentPath = location.pathname;
+        // Images and diagrams in the swapped-in HTML start out shorter than they end up,
+        // so scrolling before they settle lands too far down
+        const imgs = Array.from(document.querySelectorAll('#content img'), img => img.decode().catch(() => {}));
+        const videos = Array.from(document.querySelectorAll('#content video'), videoReady);
+        await Promise.all([setupPage(), ...imgs, ...videos]);
+        // 'instant' overrides the page's smooth scroll-behavior, which would visibly glide here
+        if (keepScroll) { window.scrollTo({ top: y, behavior: 'instant' }); return; }
+        if (scrollY !== undefined) { window.scrollTo({ top: scrollY, behavior: 'instant' }); return; }
+        const target = hashTarget();
+        if (target) target.scrollIntoView();
+        else window.scrollTo(0, 0);
+      }
 
       // --- Auto-reload ---
       setInterval(async () => {
         try {
-          const h = await fetch('/_hash?' + Date.now()).then(r => r.text());
-          if (lastHash !== null && h !== lastHash) location.reload();
+          const path = location.pathname;
+          const r = await fetch('/_hash?path=' + encodeURIComponent(path), { cache: 'no-store' });
+          if (!r.ok) return;
+          const h = await r.text();
+          if (path !== location.pathname) return;
+          if (lastHash !== null && h !== lastHash) loadPage(location.pathname, { keepScroll: true });
           lastHash = h;
         } catch (_) {}
       }, 500);
 
-      document.addEventListener('click', async e => {
-        const a = e.target.closest('a');
-        if (!a) return;
-        const href = a.getAttribute('href');
-        if (!href || href.startsWith('http') || href.startsWith('//') || href.startsWith('#')) return;
-        if (!href.endsWith('.md')) return;
+      // Lets the server shut down when started with --exit-on-close
+      addEventListener('pagehide', () => navigator.sendBeacon('/_bye'));
+
+      document.addEventListener('click', e => {
+        if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        const a = e.target.closest('a[href]');
+        if (!a || a.target === '_blank' || a.origin !== location.origin) return;
+        if (!MD_RE.test(a.pathname)) return;
+        if (a.pathname === location.pathname && a.hash) return;
         e.preventDefault();
-        const res = await fetch(href).catch(() => null);
-        if (!res || !res.ok) { location.href = href; return; }
-        const html = await res.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        document.title = doc.title;
-        document.getElementById('content').innerHTML = doc.getElementById('content').innerHTML;
-        const oldThemePanel = document.getElementById('theme-panel');
-        const newThemePanel = doc.getElementById('theme-panel');
-        if (oldThemePanel && newThemePanel) oldThemePanel.innerHTML = newThemePanel.innerHTML;
-        history.pushState(null, '', href);
-        lastHash = null;
-        setupHeadingAnchors();
-        setupToc();
-        setupCopyButtons();
-        applyTheme(localStorage.getItem('md-theme') || DEFAULT_THEME);
-        renderMermaid();
-        window.scrollTo(0, 0);
+        loadPage(a.pathname + a.hash, { push: true });
+      });
+
+      addEventListener('popstate', () => {
+        if (location.pathname !== currentPath) {
+          loadPage(location.pathname + location.hash, { scrollY: history.state?.y });
+          return;
+        }
+        const target = hashTarget();
+        if (target) target.scrollIntoView();
       });
     </script>
   </body>

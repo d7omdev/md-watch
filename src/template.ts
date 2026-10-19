@@ -25,6 +25,7 @@ import hljsTokyoNightDark from "highlight.js/styles/tokyo-night-dark.min.css" wi
 import hljsTokyoNightLight from "highlight.js/styles/tokyo-night-light.min.css" with {
   type: "text",
 };
+import katexPkg from "katex/package.json" with { type: "json" };
 import templateHtml from "./template.html" with { type: "text" };
 import { type Theme, themes } from "./themes";
 
@@ -114,14 +115,15 @@ const _themeDarkJson = buildThemeDarkJson();
 
 export function template(body: string, title: string): string {
   return templateHtml
-    .replace("{{TITLE}}", escapeHtml(title))
+    .replace("{{TITLE}}", () => escapeHtml(title))
     .replace("{{HLJS_TAGS}}", _hljsTags)
     .replace("{{THEME_CSS}}", _themeCss)
     .replace("{{THEME_ITEMS}}", _themeItems)
     .replace("{{THEMES_JSON}}", _themesJson)
     .replace("{{THEME_DARK_JSON}}", _themeDarkJson)
     .replace("{{DEFAULT_THEME}}", DEFAULT_THEME)
-    .replace("{{BODY}}", body);
+    .replace("{{KATEX_VERSION}}", katexPkg.version)
+    .replace("{{BODY}}", () => body);
 }
 
 function escapeHtml(s: string): string {
